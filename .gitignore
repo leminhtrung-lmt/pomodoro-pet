@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+.pomodoro_pet.json
+.pomodoro_pet.log

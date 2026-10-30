@@ -1,0 +1,19 @@
+MUC TIEU: tao ra 1 file PomodoroPet.exe de gui cho bat ky ai. Nguoi nhan CHI CAN BAM DUP, khong can cai Python.
+Viec tao file exe chi can lam MOT LAN, boi nguoi phan phoi.
+
+CACH A - Khong cai gi tren may cua ban (dung GitHub, mien phi, khoang 10 phut)
+ 1. Tao tai khoan o github.com, bam dau "+" -> "New repository", dat ten pomodoro-pet, chon Public, bam Create.
+ 2. Bam "uploading an existing file", giai nen file zip nay roi KEO THA ca thu muc (gom pomodoro_pet.pyw, README.md, LICENSE va thu muc .github) vao trang. Bam "Commit changes".
+ 3. O cot ben phai bam "Releases" -> "Create a new release". O "Choose a tag" go v1.1.0 roi chon "Create new tag". Dat tieu de, viet ghi chu, bam "Publish release".
+ 4. Vao tab "Actions", doi dau tick xanh (~2-3 phut). File PomodoroPet.exe tu xuat hien trong muc "Assets" cua ban Release.
+ 5. Gui cho moi nguoi duong dan: https://github.com/leminhtrung-lmt/pomodoro-pet/releases/latest
+ (Neu GitHub khong nhan thu muc .github: bam "Add file" -> "Create new file", go ten  .github/workflows/build.yml  roi dan noi dung file build.yml vao.)
+
+CACH B - Tren 1 may co Python (chi may cua ban, khong phai may nguoi dung)
+ 1. Cai Python tu python.org (tick "Add Python to PATH").
+ 2. Bam dup file build_exe.bat. Doi ~1-2 phut. File PomodoroPet.exe nam trong thu muc "dist".
+
+LUU Y KHI GUI CHO NGUOI KHAC
+ - Lan dau chay Windows co the hien "Windows protected your PC": bam "More info" -> "Run anyway". Day la do file chua co chu ky so (chu ky ton phi hang nam), khong phai loi.
+ - Mot so phan mem diet virus co the bao nham file tao bang PyInstaller. Neu gap, them file vao danh sach cho phep.
+ - Thoat khan cap khi thu cung dang chan man hinh: Ctrl + Shift + X

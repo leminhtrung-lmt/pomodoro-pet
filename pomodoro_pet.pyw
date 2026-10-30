@@ -8,7 +8,7 @@ Nếu app có lỗi, chi tiết được ghi vào file .pomodoro_pet.log trong t
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import filedialog
-import csv, json, os, math, random, time, struct, wave, tempfile, threading, ctypes, traceback, unicodedata, re, datetime as dt
+import csv, json, os, math, random, time, struct, wave, tempfile, threading, ctypes, traceback, unicodedata, re, datetime as dt, queue
 try:
     import winsound
 except ImportError:
@@ -388,6 +388,7 @@ class Tray:
     CB = 0x8001
     def __init__(s, app):
         s.app, s.ok, s.tip, s.hwnd = app, False, "", None
+        s.events = queue.SimpleQueue()
         if not HAS_TRAY: return
         try:
             u, k, sh = ctypes.windll.user32, ctypes.windll.kernel32, ctypes.windll.shell32
@@ -402,6 +403,7 @@ class Tray:
             u.AppendMenuW.argtypes = [wt.HMENU, wt.UINT, ctypes.c_size_t, wt.LPCWSTR]
             u.TrackPopupMenu.argtypes = [wt.HMENU, wt.UINT, ctypes.c_int, ctypes.c_int, ctypes.c_int, wt.HWND, wt.LPVOID]
             u.SetForegroundWindow.argtypes = [wt.HWND]; u.DestroyMenu.argtypes = [wt.HMENU]; u.GetCursorPos.argtypes = [ctypes.POINTER(PT)]
+            u.DestroyWindow.argtypes = [wt.HWND]; u.DestroyWindow.restype = wt.BOOL
             s.u, s.sh = u, sh
             s.proc = WNDPROC(s.wndproc)                                   # phải giữ tham chiếu
             hi = k.GetModuleHandleW(None)
@@ -429,13 +431,15 @@ class Tray:
         if s.ok: s.notify(1, 1 | 2 | 0x10, s.tip, msg, title)
     def remove(s):
         if s.ok: s.notify(2, 0); s.ok = False                                       # NIM_DELETE
+        if s.hwnd and s.u.DestroyWindow(s.hwnd):
+            s.hwnd = None; s.proc = None
 
     def wndproc(s, hwnd, msg, wp, lp):
         try:
             if msg == s.CB:
                 ev = lp & 0xFFFF
-                if ev in (0x202, 0x203): s.app.root.after(0, s.app.restore)           # bấm / bấm đúp: mở lại
-                elif ev == 0x205: s.menu()                                            # bấm phải: menu
+                if ev in (0x201, 0x202, 0x203, 0x400, 0x401): s.events.put("restore")
+                elif ev == 0x205: s.events.put("menu")                               # bấm phải: menu
                 return 0
         except Exception: pass
         return s.u.DefWindowProcW(hwnd, msg, wp, lp)
@@ -909,6 +913,11 @@ class App:
         s.end_break(); s.mode, s.running, s.total = "idle", False, 0; s.remaining = s.S["focus"] * 60; s.mon.reset()
     def tick(s):
         try:
+            while True:
+                try: event = s.tray.events.get_nowait()
+                except queue.Empty: break
+                if event == "restore": s.restore()
+                elif event == "menu": s.tray.menu()
             if s.running:
                 s.remaining = max(0, int(math.ceil(s.deadline - time.monotonic())))
                 if s.mode == "focus" and s.S["auto"] and s.remaining > 0 and time.monotonic() - s.last_sample >= 1:

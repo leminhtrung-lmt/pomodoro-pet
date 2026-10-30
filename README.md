@@ -183,6 +183,7 @@ Có. Trong giờ nghỉ, lớp phủ chặn thao tác chuột xuống các cửa
   - Các vòng lặp cập nhật giao diện giờ được bảo vệ: nếu một khung hình gặp lỗi thì app vẫn tiếp tục chạy chứ không bị "đứng hình". Lỗi được ghi vào file log.
   - App ngừng vẽ màn hình chính khi đang ẩn trong khay hoặc đang có lớp phủ nghỉ, để tiết kiệm CPU.
   - Nút `+` / `−` khi giữ chuột không còn ghi file liên tục.
+- Sửa lỗi click icon khay làm app thoát; cửa sổ khôi phục mà không dừng bộ đếm.
 - **Thú cưng tự chạy nhảy:** không còn chạy theo con trỏ chuột. Mèo và cún chạy, nghỉ, nhảy lên ngẫu nhiên. Cá và chim bay lượn ngẫu nhiên.
 - Cập nhật tài liệu.
 

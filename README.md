@@ -20,13 +20,13 @@ Bấm đúp file vừa tải là chạy, không cần cài gì. Nếu Windows hi
 
 | Nhóm | Chi tiết |
 |---|---|
-| **Hẹn giờ** | Tự đặt thời gian tập trung (1–120 phút) và nghỉ ngắn (1–30 phút) |
+| **Hẹn giờ** | Nhập thời gian tập trung và nghỉ theo giờ, phút, giây; tự bắt đầu phiên mới sau khi nghỉ |
 | **Thú cưng** | 4 bạn đồng hành: Mèo, Cún, Cá, Chim, có hoạt hình chớp mắt, vẫy đuôi, thè lưỡi, vỗ cánh... |
 | **Màn hình nghỉ** | Lớp phủ mờ chặn thao tác xuống các cửa sổ bên dưới, trên mọi màn hình. Chỉ có thú cưng và một nút **Thoát** |
 | **Thú cưng tự chạy nhảy** | Mèo và cún chạy qua lại, dừng nghỉ, thỉnh thoảng nhảy lên. Cá và chim bay lượn ngẫu nhiên. **Không phụ thuộc chuột**. Bấm vào thú cưng thì nó nhảy và bắn tim |
 | **Nhạc nền** | Lo-fi, tiếng mưa, tiếng sóng biển (app tự tạo) hoặc file `.wav` của bạn, với 3 mức âm lượng. Phần chọn nhạc nằm trong thẻ Cài đặt |
 | **Khen / nhắc nhở** | Sau mỗi phiên, so sánh với hôm qua rồi khen hoặc khuyên chú tâm hơn |
-| **Thống kê** | Biểu đồ phút tập trung, đợt xao nhãng theo ngày và điểm theo phiên; xuất CSV mở bằng Excel |
+| **Thống kê** | Biểu đồ phút tập trung, đợt xao nhãng, điểm trung bình tập trung/xao nhãng; xuất CSV mở bằng Excel |
 | **Chế độ nghiêm** | Ẩn nút Thoát, bắt buộc nghỉ hết giờ |
 | **Khay hệ thống** | Thu nhỏ thì app vào khay cạnh đồng hồ Windows, không chiếm taskbar |
 | **Giao diện co giãn** | Kéo to nhỏ cửa sổ thoải mái, tự thích ứng độ phân giải màn hình |
@@ -47,14 +47,14 @@ Bấm đúp file vừa tải là chạy, không cần cài gì. Nếu Windows hi
 1. Mở app, ở thẻ **Tập trung** bấm **Bắt đầu**.
 2. Vòng tròn đếm ngược chạy dần. Trạng thái hiện bên dưới đồng hồ.
 3. Hết giờ tập trung, app kêu một tiếng chuông và màn hình nghỉ hiện ra.
-4. Hết giờ nghỉ, màn hình nghỉ tự biến mất, cửa sổ app nổi lên kèm lời khen hoặc nhắc nhở.
+4. Hết giờ nghỉ, màn hình nghỉ tự biến mất, cửa sổ app nổi lên kèm lời khen hoặc nhắc nhở và phiên tập trung kế tiếp tự bắt đầu.
 
 ### Các nút ở thẻ Tập trung
 - **Bắt đầu / Tạm dừng / Tiếp tục**: điều khiển đồng hồ. Thời gian tạm dừng không được tính là thời gian tập trung hay xao nhãng.
 - **Đặt lại**: dừng và đưa đồng hồ về ban đầu.
 
 ### Thẻ Cài đặt
-- **Thời gian**: bấm `−` và `+` để chỉnh (giữ chuột để tăng giảm nhanh).
+- **Thời gian**: nhập giờ, phút, giây mong muốn; `−` và `+` vẫn chỉnh nhanh theo từng phút.
 - **Bạn đồng hành**: chọn Mèo, Cún, Cá hoặc Chim.
 - **Nhạc khi nghỉ**: chọn Tắt, Lo-fi, Mưa, Sóng biển hoặc File .wav. Bấm vào để nghe thử khoảng 6 giây.
 - **Âm lượng**: Nhỏ, Vừa, To.
@@ -65,7 +65,8 @@ Bấm đúp file vừa tải là chạy, không cần cài gì. Nếu Windows hi
 - **Xem thử giờ nghỉ (12 giây)**: xem ngay thú cưng và màn hình nghỉ mà không cần đợi.
 
 ### Thống kê
-- Mở thẻ **Thống kê** để xem 14 ngày gần nhất và điểm của 10 phiên gần đây.
+- Mở thẻ **Thống kê** để xem 14 ngày gần nhất, điểm của 10 phiên gần đây và điểm trung bình tập trung/xao nhãng trên các phiên đã đo.
+- Điểm trung bình xao nhãng là phần bù của điểm tập trung trên thang 100.
 - Bấm **Xuất CSV cho Excel** để lưu tổng hợp theo ngày và chi tiết từng phiên vào một file CSV UTF-8.
 
 ### Màn hình nghỉ

@@ -605,13 +605,20 @@ class App:
         S = s.S = s.db["s"]
         for key, default in tuple(S.items()):
             if type(S[key]) is not type(default): S[key] = default
-        S["focus"] = max(1, min(120, S["focus"]))
-        S["brk"] = max(1, min(30, S["brk"]))
+        S["focus"] = max(1, min(1440, S["focus"]))
+        S["brk"] = max(1, min(1440, S["brk"]))
+        for key in ("focus", "brk"):
+            seconds_key = key + "_seconds"
+            seconds = S.get(seconds_key, S[key] * 60)
+            if not isinstance(seconds, int) or isinstance(seconds, bool) or not 1 <= seconds <= 86399:
+                seconds = S[key] * 60
+            S[seconds_key] = seconds
         if S["pet"] not in PETS: S["pet"] = "Mèo"
         if S["music"] not in {key for key, _ in MUS}: S["music"] = "off"
         if S["vol"] not in VOLS: S["vol"] = "Vừa"
-        s.mode, s.running, s.deadline, s.remaining, s.total, s.token, s.ov, s.t0, s.refreshers = "idle", False, 0, S["focus"] * 60, 0, 0, None, time.time(), []
+        s.mode, s.running, s.deadline, s.remaining, s.total, s.token, s.ov, s.t0, s.refreshers = "idle", False, 0, S["focus_seconds"], 0, 0, None, time.time(), []
         s.session_started = None
+        s.break_continues = False
         s.dirty, s.stats_txt, s.hidden, s.tab = False, "", False, "main"
         s.mon = Monitor(s); s.last_sample = s.last_nudge = 0.0
 
@@ -653,7 +660,7 @@ class App:
             tk.Label(f, text=title, bg=CARD, fg=MUTE, font=F(9)).pack(anchor="w", padx=z(14), pady=(z(10), z(4)))
             return f
         c1 = card("Thời gian")
-        s.stepper(c1, "Tập trung", "focus", 1, 120); s.stepper(c1, "Nghỉ ngắn", "brk", 1, 30); tk.Frame(c1, bg=CARD, height=z(8)).pack()
+        s.duration_input(c1, "Tập trung", "focus"); s.duration_input(c1, "Nghỉ ngắn", "brk"); tk.Frame(c1, bg=CARD, height=z(8)).pack()
         s.chips(card("Bạn đồng hành"), [(p, p) for p in PETS], "pet")
         s.chips(card("Nhạc khi nghỉ (bấm để nghe thử)"), MUS, "music", s.pick_music)
         s.chips(card("Âm lượng"), [(v, v) for v in VOLS], "vol", s.pick_music)
@@ -685,15 +692,50 @@ class App:
         s.pages[k].pack(fill="both", expand=True)
         for kk, b in s.tabs.items(): b.set(on=(kk == k))
         if k == "stats": s.draw_stats()
-    def stepper(s, p, label, key, lo, hi):
-        r = tk.Frame(p, bg=CARD); r.pack(fill="x", padx=z(14), pady=z(4))
-        tk.Label(r, text=label, bg=CARD, fg="#fff", font=F(11)).pack(side="left")
-        def chg(d):
-            s.S[key] = max(lo, min(hi, s.S[key] + d)); v.config(text=f"{s.S[key]} phút"); s.dirty = True
-            if s.mode == "idle": s.remaining = s.S["focus"] * 60
-        Btn(r, "+", lambda: chg(1), size=13, padx=13, pady=3, repeat=True, bgp=CARD).pack(side="right")
-        v = tk.Label(r, text=f"{s.S[key]} phút", width=9, bg=CARD, fg="#fff", font=F(12, True)); v.pack(side="right")
-        Btn(r, "−", lambda: chg(-1), size=13, padx=13, pady=3, repeat=True, bgp=CARD).pack(side="right")
+    def duration_seconds(s, key):
+        return s.S.get(key + "_seconds", s.S[key] * 60)
+    def update_duration(s, key, seconds):
+        s.S[key + "_seconds"] = seconds
+        s.S[key] = max(1, int(math.ceil(seconds / 60)))
+        s.dirty = True
+        if s.mode == "idle" and key == "focus": s.remaining = seconds
+    def duration_input(s, p, label, key):
+        row = tk.Frame(p, bg=CARD); row.pack(fill="x", padx=z(14), pady=z(5))
+        tk.Label(row, text=label, bg=CARD, fg="#fff", font=F(10)).pack(side="left")
+        seconds = s.duration_seconds(key)
+        hours, remainder = divmod(seconds, 3600); minutes, seconds = divmod(remainder, 60)
+        fields, entries = [], []
+        for value, unit_key, unit, limit in ((seconds, "seconds", "giây", 59), (minutes, "minutes", "phút", 59), (hours, "hours", "giờ", 23)):
+            group = tk.Frame(row, bg=CARD); group.pack(side="right", padx=(z(2), 0))
+            var = tk.StringVar(value=f"{value:02d}")
+            entry = tk.Entry(group, textvariable=var, width=3, justify="center", bg=CHIP, fg="#fff", insertbackground="#fff", relief="flat", font=F(10))
+            entry.pack(side="left", ipady=z(4))
+            entries.append(entry)
+            tk.Label(group, text=unit, bg=CARD, fg=MUTE, font=F(8)).pack(side="left", padx=(z(2), z(4)))
+            fields.append((var, unit_key, limit))
+        def refresh():
+            current = s.duration_seconds(key)
+            h, rest = divmod(current, 3600); m, sec = divmod(rest, 60)
+            parts = {"hours": h, "minutes": m, "seconds": sec}
+            for var, unit_key, _ in fields: var.set(f"{parts[unit_key]:02d}")
+        def commit(event=None):
+            try:
+                values = {unit_key: int(var.get()) for var, unit_key, _ in fields}
+                if any(values[unit_key] < 0 or values[unit_key] > limit for _, unit_key, limit in fields): raise ValueError
+                total = values["hours"] * 3600 + values["minutes"] * 60 + values["seconds"]
+                if total < 1: raise ValueError
+            except ValueError:
+                refresh(); return
+            s.update_duration(key, total)
+            refresh()
+        for entry in entries:
+            entry.bind("<Return>", commit); entry.bind("<FocusOut>", commit)
+            entry.bind("<FocusIn>", lambda event: event.widget.selection_range(0, tk.END))
+        def adjust(delta):
+            current = max(1, min(86399, s.duration_seconds(key) + delta * 60))
+            s.update_duration(key, current); refresh()
+        Btn(row, "+", lambda: adjust(1), size=11, padx=9, pady=4, repeat=True, bgp=CARD).pack(side="right", padx=(z(4), 0))
+        Btn(row, "−", lambda: adjust(-1), size=11, padx=9, pady=4, repeat=True, bgp=CARD).pack(side="right", padx=(z(4), 0))
     def chips(s, p, items, key, cmd=None):
         fl = Flow(p, bg=CARD, height=1); fl.pack(fill="x", padx=z(11), pady=(0, z(10))); btns = {}
         def refresh():
@@ -784,11 +826,15 @@ class App:
         for date, data in sorted(days.items(), key=lambda item: str(item[0])):
             if isinstance(date, str) and isinstance(data, dict) and isinstance(data.get("sessions"), list):
                 sessions.extend((date, session) for session in data["sessions"] if isinstance(session, dict))
-        sessions = sessions[-10:]
+        all_sessions = sessions
+        sessions = all_sessions[-10:]
         total_sessions = sum(len(data.get("sessions", [])) for data in days.values() if isinstance(data, dict) and isinstance(data.get("sessions"), list))
         total_minutes = sum(metric(data, "focus") for data in days.values() if isinstance(data, dict))
+        scored = [session["score"] for _, session in all_sessions if numeric(session.get("score")) and session.get("score") <= 100]
         if total_sessions:
-            s.stats_summary.config(text=f"{total_sessions} phiên đã hoàn thành · {total_minutes} phút tập trung · Biểu đồ ngày: 14 ngày gần nhất")
+            average = round(sum(scored) / len(scored)) if scored else None
+            average_text = f" · TB tập trung {average}/100 · TB xao nhãng {100 - average}/100" if average is not None else " · Chưa có điểm để tính trung bình"
+            s.stats_summary.config(text=f"{total_sessions} phiên đã hoàn thành · {total_minutes} phút tập trung{average_text} · Biểu đồ ngày: 14 ngày gần nhất")
         else:
             s.stats_summary.config(text="Chưa có phiên hoàn thành mới. Chi tiết từng phiên được lưu từ khi bật bản này; tổng ngày cũ vẫn được giữ.")
 
@@ -890,7 +936,9 @@ class App:
             threading.Thread(target=run, daemon=True).start()
 
     # --- đồng hồ ---
-    def fmt(s, sec): return f"{sec // 60:02d}:{sec % 60:02d}"
+    def fmt(s, sec):
+        if sec >= 3600: return f"{sec // 3600:02d}:{(sec % 3600) // 60:02d}:{sec % 60:02d}"
+        return f"{sec // 60:02d}:{sec % 60:02d}"
     def status_text(s):
         if s.mode == "focus" and s.running and s.S["auto"]:
             m = s.mon
@@ -901,16 +949,18 @@ class App:
         return {"idle": "Sẵn sàng", "break": "Đang nghỉ"}.get(s.mode, "Đang tập trung" if s.running else "Đã tạm dừng")
     def toggle(s):
         if s.mode == "idle":
-            s.mode = "focus"; s.total = s.remaining = s.S["focus"] * 60
-            s.deadline = time.monotonic() + s.remaining; s.running = True; s.msg.config(text="")
-            s.session_started = dt.datetime.now().isoformat(timespec="seconds")
-            s.mon.reset(); s.last_sample = time.monotonic()
+            s.start_focus()
         elif s.mode == "focus" and s.running:
             s.running = False; s.mon.pause()
         elif s.mode == "focus":
             s.deadline = time.monotonic() + s.remaining; s.running = True; s.last_sample = time.monotonic()
     def reset(s):
-        s.end_break(); s.mode, s.running, s.total = "idle", False, 0; s.remaining = s.S["focus"] * 60; s.mon.reset()
+        s.end_break(); s.mode, s.running, s.total = "idle", False, 0; s.remaining = s.duration_seconds("focus"); s.mon.reset()
+    def start_focus(s):
+        s.mode = "focus"; s.total = s.remaining = s.duration_seconds("focus")
+        s.deadline = time.monotonic() + s.remaining; s.running = True; s.msg.config(text="")
+        s.session_started = dt.datetime.now().isoformat(timespec="seconds")
+        s.mon.reset(); s.last_sample = time.monotonic()
     def tick(s):
         try:
             while True:
@@ -933,23 +983,28 @@ class App:
         s.running = False; s.chime()
         if s.mode == "focus":
             r = s.mon.result(); s.record_session(r)
-            s.save(); s.msg.config(text=s.feedback(r)); s.start_break(s.S["brk"] * 60)
+            s.save(); s.msg.config(text=s.feedback(r)); s.start_break(s.duration_seconds("brk"))
         else: s.end_break(True)
-    def start_break(s, sec):
+    def start_break(s, sec, continue_session=True):
+        s.break_continues = continue_session
         s.mode = "break"; s.total = s.remaining = sec; s.deadline = time.monotonic() + sec; s.running = True
         try: s.ov = Overlay(s, s.S["pet"], bool(s.S["strict"]))
         except Exception: log(); s.ov = None
         s.music(s.S["music"])
     def end_break(s, bring_back=False):
         if s.ov: s.ov.close(); s.ov = None
+        continue_session = s.break_continues
+        s.break_continues = False
         if s.mode == "break":
-            s.music("off"); s.mode, s.running, s.total = "idle", False, 0; s.remaining = s.S["focus"] * 60
+            s.music("off"); s.mode, s.running, s.total = "idle", False, 0; s.remaining = s.duration_seconds("focus")
             if s.hidden:
                 if bring_back: s.tray.balloon("Hết giờ nghỉ", s.msg.cget("text") or "Sẵn sàng cho phiên mới!")
             else: s.restore()
-        if bring_back: s.show("main")
+        if bring_back:
+            s.show("main")
+            if continue_session: s.start_focus()
     def preview(s):
-        if s.mode == "idle": s.start_break(12)
+        if s.mode == "idle": s.start_break(12, False)
     def quit(s):
         s.save(); s.music("off"); s.tray.remove()
         if s.ov: s.ov.close()

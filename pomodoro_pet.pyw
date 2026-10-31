@@ -700,18 +700,20 @@ class App:
         s.dirty = True
         if s.mode == "idle" and key == "focus": s.remaining = seconds
     def duration_input(s, p, label, key):
-        row = tk.Frame(p, bg=CARD); row.pack(fill="x", padx=z(14), pady=z(5))
-        tk.Label(row, text=label, bg=CARD, fg="#fff", font=F(10)).pack(side="left")
+        row = tk.Frame(p, bg=CARD); row.pack(fill="x", padx=z(14), pady=z(7))
+        header = tk.Frame(row, bg=CARD); header.pack(fill="x")
+        tk.Label(header, text=label, bg=CARD, fg="#fff", font=F(11, True)).pack(side="left")
         seconds = s.duration_seconds(key)
         hours, remainder = divmod(seconds, 3600); minutes, seconds = divmod(remainder, 60)
         fields, entries = [], []
-        for value, unit_key, unit, limit in ((seconds, "seconds", "giây", 59), (minutes, "minutes", "phút", 59), (hours, "hours", "giờ", 23)):
-            group = tk.Frame(row, bg=CARD); group.pack(side="right", padx=(z(2), 0))
+        fields_row = tk.Frame(row, bg=CARD); fields_row.pack(fill="x", pady=(z(5), 0))
+        for value, unit_key, unit, limit in ((hours, "hours", "Giờ", 23), (minutes, "minutes", "Phút", 59), (seconds, "seconds", "Giây", 59)):
+            group = tk.Frame(fields_row, bg=CARD); group.pack(side="left", fill="x", expand=True, padx=(0, z(6)))
+            tk.Label(group, text=unit, bg=CARD, fg=MUTE, font=F(9)).pack(anchor="w", pady=(0, z(2)))
             var = tk.StringVar(value=f"{value:02d}")
-            entry = tk.Entry(group, textvariable=var, width=3, justify="center", bg=CHIP, fg="#fff", insertbackground="#fff", relief="flat", font=F(10))
-            entry.pack(side="left", ipady=z(4))
+            entry = tk.Entry(group, textvariable=var, width=5, justify="center", bg=CHIP, fg="#fff", insertbackground="#fff", relief="flat", font=F(12, True))
+            entry.pack(fill="x", ipady=z(5))
             entries.append(entry)
-            tk.Label(group, text=unit, bg=CARD, fg=MUTE, font=F(8)).pack(side="left", padx=(z(2), z(4)))
             fields.append((var, unit_key, limit))
         def refresh():
             current = s.duration_seconds(key)
@@ -734,8 +736,8 @@ class App:
         def adjust(delta):
             current = max(1, min(86399, s.duration_seconds(key) + delta * 60))
             s.update_duration(key, current); refresh()
-        Btn(row, "+", lambda: adjust(1), size=11, padx=9, pady=4, repeat=True, bgp=CARD).pack(side="right", padx=(z(4), 0))
-        Btn(row, "−", lambda: adjust(-1), size=11, padx=9, pady=4, repeat=True, bgp=CARD).pack(side="right", padx=(z(4), 0))
+        Btn(header, "+", lambda: adjust(1), size=10, padx=9, pady=3, repeat=True, bgp=CARD).pack(side="right", padx=(z(4), 0))
+        Btn(header, "−", lambda: adjust(-1), size=10, padx=9, pady=3, repeat=True, bgp=CARD).pack(side="right", padx=(z(4), 0))
     def chips(s, p, items, key, cmd=None):
         fl = Flow(p, bg=CARD, height=1); fl.pack(fill="x", padx=z(11), pady=(0, z(10))); btns = {}
         def refresh():

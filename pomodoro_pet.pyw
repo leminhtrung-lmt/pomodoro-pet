@@ -985,8 +985,45 @@ class App:
         s.running = False; s.chime()
         if s.mode == "focus":
             r = s.mon.result(); s.record_session(r)
-            s.save(); s.msg.config(text=s.feedback(r)); s.start_break(s.duration_seconds("brk"))
+            s.save(); s.msg.config(text=s.feedback(r)); s.ask_continue()
         else: s.end_break(True)
+    def ask_continue(s):
+        if s.hidden: s.restore()
+        dialog = tk.Toplevel(s.root)
+        dialog.title("Pomodoro Pet")
+        dialog.configure(bg=BG)
+        dialog.transient(s.root)
+        dialog.resizable(False, False)
+        width, height = z(400), z(190)
+        dialog.geometry(f"{width}x{height}")
+
+        tk.Label(dialog, text="Hoàn thành phiên tập trung!", bg=BG, fg="#ffffff", font=F(15, True)).pack(pady=(z(24), z(8)))
+        tk.Label(dialog, text="Bạn có muốn nghỉ rồi tiếp tục phiên mới không?", bg=BG, fg=MUTE, font=F(10), wraplength=z(360)).pack(pady=(0, z(18)))
+
+        buttons = tk.Frame(dialog, bg=BG)
+        buttons.pack()
+
+        def choose(continue_session):
+            dialog.destroy()
+            if continue_session:
+                s.start_break(s.duration_seconds("brk"))
+            else:
+                s.mode, s.running, s.total = "idle", False, 0
+                s.remaining = s.duration_seconds("focus")
+                s.show("main")
+                s.restore()
+
+        Btn(buttons, "Có, tiếp tục", lambda: choose(True), bg=CHIP, sel=ACC, size=10, padx=16, pady=9).pack(side="left", padx=z(5))
+        Btn(buttons, "Không, kết thúc", lambda: choose(False), bg=CHIP, size=10, padx=16, pady=9).pack(side="left", padx=z(5))
+        dialog.protocol("WM_DELETE_WINDOW", lambda: choose(False))
+        dialog.bind("<Escape>", lambda e: choose(False))
+        dialog.update_idletasks()
+        x = s.root.winfo_rootx() + (s.root.winfo_width() - width) // 2
+        y = s.root.winfo_rooty() + (s.root.winfo_height() - height) // 2
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        dialog.attributes("-topmost", True)
+        dialog.grab_set()
+        dialog.focus_force()
     def start_break(s, sec, continue_session=True):
         s.break_continues = continue_session
         s.mode = "break"; s.total = s.remaining = sec; s.deadline = time.monotonic() + sec; s.running = True
